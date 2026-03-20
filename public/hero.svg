@@ -1,0 +1,31 @@
+<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Floating Elements -->
+  <circle cx="120" cy="150" r="35" fill="#facc15"/>
+  <text x="120" y="158" text-anchor="middle" font-size="28" font-family="Arial" fill="white">A</text>
+
+  <circle cx="480" cy="140" r="30" fill="#38bdf8"/>
+  <text x="480" y="148" text-anchor="middle" font-size="24" font-family="Arial" fill="white">あ</text>
+
+  <circle cx="100" cy="450" r="28" fill="#f472b6"/>
+  <text x="100" y="458" text-anchor="middle" font-size="22" font-family="Arial" fill="white">ب</text>
+
+  <circle cx="500" cy="460" r="32" fill="#a78bfa"/>
+  <text x="500" y="468" text-anchor="middle" font-size="24" font-family="Arial" fill="white">中</text>
+
+  <!-- Center Mascot Body -->
+  <rect x="225" y="225" width="150" height="150" rx="35" fill="#22c55e"/>
+
+  <!-- Eyes -->
+  <circle cx="270" cy="285" r="12" fill="white"/>
+  <circle cx="330" cy="285" r="12" fill="white"/>
+  <circle cx="270" cy="285" r="6" fill="#1f2937"/>
+  <circle cx="330" cy="285" r="6" fill="#1f2937"/>
+
+  <!-- Smile -->
+  <path d="M275 330 Q300 355 325 330" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+  <!-- Subtle Glow Effect -->
+  <circle cx="300" cy="300" r="170" fill="#22c55e" opacity="0.05"/>
+
+</svg>

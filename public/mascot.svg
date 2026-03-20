@@ -1,0 +1,26 @@
+<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Soft Glow -->
+  <circle cx="150" cy="150" r="120" fill="#22c55e" opacity="0.08"/>
+
+  <!-- Mascot Body -->
+  <rect x="75" y="75" width="150" height="150" rx="40" fill="#22c55e"/>
+
+  <!-- Eyes -->
+  <circle cx="120" cy="140" r="16" fill="white"/>
+  <circle cx="180" cy="140" r="16" fill="white"/>
+
+  <!-- Pupils -->
+  <circle cx="120" cy="140" r="8" fill="#1f2937"/>
+  <circle cx="180" cy="140" r="8" fill="#1f2937"/>
+
+  <!-- Smile -->
+  <path 
+    d="M120 185 Q150 215 180 185" 
+    stroke="white" 
+    stroke-width="8" 
+    fill="none" 
+    stroke-linecap="round"
+  />
+
+</svg>

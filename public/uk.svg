@@ -1,0 +1,22 @@
+<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Blue Background -->
+  <rect width="60" height="40" fill="#012169"/>
+
+  <!-- White Diagonals -->
+  <polygon points="0,0 7,0 60,33 60,40 53,40 0,7" fill="white"/>
+  <polygon points="53,0 60,0 60,7 7,40 0,40 0,33" fill="white"/>
+
+  <!-- Red Diagonals -->
+  <polygon points="0,0 4,0 60,34 60,40 56,40 0,6" fill="#C8102E"/>
+  <polygon points="56,0 60,0 60,6 4,40 0,40 0,34" fill="#C8102E"/>
+
+  <!-- White Cross -->
+  <rect x="0" y="15" width="60" height="10" fill="white"/>
+  <rect x="25" y="0" width="10" height="40" fill="white"/>
+
+  <!-- Red Cross -->
+  <rect x="0" y="17" width="60" height="6" fill="#C8102E"/>
+  <rect x="27" y="0" width="6" height="40" fill="#C8102E"/>
+
+</svg>
