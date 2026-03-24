@@ -36,7 +36,7 @@ export const Footer = ({
                 {status === "wrong" && (
                     <div className="text-rose-500 font-bold text-base lg:text-2xl flex items-center">
                         <XCircle  className="h-6 w-6 lg:h-10 lg:w-10 mr-4"/>
-                        Try again ...
+                        Better luck next time ...
                     </div>
                 )}
                 {status === "completed" && (
@@ -57,7 +57,7 @@ export const Footer = ({
                 >
                     {status === "none" && "Check"}
                     {status === "correct" && "Next"}
-                    {status === "wrong" && "Retry"}
+                    {status === "wrong" && "Next"}
                     {status === "completed" && "Continue"}
                 </Button>
             </div>

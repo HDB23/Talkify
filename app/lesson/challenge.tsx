@@ -32,9 +32,20 @@ export const Challenge = ({
                     text={option.text}
                     imageSrc={option.imageSrc}
                     shortcut={`${i + 1}`}
-                    selected={selectedOption === option.id}
+                    // selected={selectedOption === option.id}
+                    selected={
+                        option.id === selectedOption || 
+                        (status === "wrong" && option.correct)
+                    }
+                    status={
+                        option.id === selectedOption
+                            ? status
+                            : status === "wrong" && option.correct
+                            ? "correct"
+                            : "none"
+                    }
                     onClick={() => onSelect(option.id)}
-                    status={status}
+                    // status={status}
                     audioSrc={option.audioSrc}
                     disabled={disabled}
                     type={type}

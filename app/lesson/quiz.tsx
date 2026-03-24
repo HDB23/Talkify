@@ -41,12 +41,20 @@ export const Quiz = ({
 
     const { open: openHeartsModal } = useHeartsModal();
     const { open: openPracticeModal } = usePracticeModal();
+    const [correctOptionId, setCorrectOptionId] = useState<number | null>(null);
 
     useMount(() => {
         if(initialPercentage === 100) {
             openPracticeModal();
         }
     });
+
+    const showCorrectOption = () => {
+        const correctOption = options.find((option) => option.correct);
+        if (correctOption) {
+            setCorrectOptionId(correctOption.id);
+        }
+    };
     
     const { width, height } = useWindowSize();
 
@@ -96,15 +104,11 @@ export const Quiz = ({
     const onContinue = () => {
         if(!selectedOption) return;
 
-        if(status === "wrong") {
-            setStatus("none");
-            setSelectedOption(undefined);
-            return;
-        }
-        if(status === "correct") {
+        if(status === "wrong" || status === "correct") {
             onNext();
             setStatus("none");
             setSelectedOption(undefined);
+            setCorrectOptionId(null); // 👈 add
             return;
         }
 
@@ -145,6 +149,10 @@ export const Quiz = ({
                         }
 
                         incorrectControls.play();
+
+                        // showCorrectOption();
+                        const correctOption = options.find((option) => option.correct);
+                        setCorrectOptionId(correctOption?.id ?? null); 
 
                         setStatus("wrong");
 
