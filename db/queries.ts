@@ -220,7 +220,7 @@ export const getLessonPercentage = cache(async () => {
 
 const DAY_IN_MS = 86_400_000;
 
-export const getUserSubscription = cache(async () => {
+export const getUserSubscription = async () => {
   const { userId } = await auth();
 
   if (!userId) return null;
@@ -232,14 +232,15 @@ export const getUserSubscription = cache(async () => {
   if (!data) return null;
 
   const isActive =
-    data.razorpayOrderId &&
-    data.razorpayCurrentPeriodEnd?.getTime()! > Date.now();
+  !!data.razorpaySubscriptionId &&
+  data.razorpayCurrentPeriodEnd.getTime() >
+    Date.now();
 
   return {
     ...data,
-    isActive: !!isActive,
+    isActive,
   };
-});
+};
 
 export const getTopTenUsers = cache(async () => {
   const { userId } = await auth();

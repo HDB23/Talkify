@@ -55,12 +55,15 @@ const ShopPage = async () => {
                         Shop
                     </h1>
                     <p className="text-muted-foreground text-center text-lg mb-6">
-                        Spend your points on cool stuffs.
+                        Unlock premium and enjoy unlimited hearts.
                     </p>
-                    <Items 
+                    <Items
                         hearts={userProgress.hearts}
                         points={userProgress.points}
-                        hasActiveSubscription={isPro} 
+                        hasActiveSubscription={isPro}
+                        currentPlan={
+                            userSubscription?.planType || null
+                        }
                     />
                 </div>
             </FeedWrapper>

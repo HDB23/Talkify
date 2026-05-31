@@ -58,6 +58,7 @@ export const Quiz = ({
     
     const { width, height } = useWindowSize();
 
+
     const router = useRouter();
 
     const [finishAudio] = useAudio({ src: "/finish.mp3", autoPlay: true });

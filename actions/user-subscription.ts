@@ -1,98 +1,67 @@
 "use server";
 
 import { razorpay } from "@/lib/razorpay";
-import { absoluteUrl } from "@/lib/utils";
-import { getUserSubscription } from "@/db/queries";
-import { auth, currentUser } from "@clerk/nextjs/server";
 
-const returnUrl = absoluteUrl("/shop");
+import {
+  auth,
+  currentUser,
+} from "@clerk/nextjs/server";
 
-// export const createRazorpayOrder = async () => {
+type PlanType =
+  | "1month"
+  | "2month"
+  | "3month";
 
-//   const { userId } = await auth();
-//   const user = await currentUser();
+const PLAN_IDS = {
+  "1month":
+    process.env
+      .RAZORPAY_PLAN_1MONTH!,
 
-//   if (!userId || !user) {
-//     throw new Error("Unauthorized");
-//   }
+  "2month":
+    process.env
+      .RAZORPAY_PLAN_2MONTH!,
 
-//   const userSubscription = await getUserSubscription();
+  "3month":
+    process.env
+      .RAZORPAY_PLAN_3MONTH!,
+};
 
-//   if (userSubscription && userSubscription.razorpayCustomerId) {
-//     return { data: returnUrl };
-//   }
+export const createRazorpaySubscription =
+  async (
+    plan: PlanType
+  ) => {
 
-//   const razorpayOrder = await razorpay.orders.create({
-//     amount: 2000, 
-//     currency: "INR",
-//     receipt: `test_receipt_${userId}`,
-//     notes: {
-//       userId,
-//       email: user.emailAddresses[0].emailAddress,
-//     },
-//   });
+    const { userId } =
+      await auth();
 
-//   return { data: razorpayOrder.id };
-// };
-
-// export const createRazorpayOrder = async () => {
-//   try {
-//     const { userId } = await auth();
-//     const user = await currentUser();
-
-//     if (!userId || !user) {
-//       throw new Error("Unauthorized");
-//     }
-
-//     const razorpayOrder = await razorpay.orders.create({
-//       amount: 2000,
-//       currency: "INR",
-//       receipt: `receipt_${userId}`,
-//       notes: {
-//         userId,
-//         email: user.emailAddresses[0].emailAddress,
-//       },
-//     });
-
-//     console.log("Order created:", razorpayOrder);
-
-//     return { data: razorpayOrder.id };
-
-//   } catch (error) {
-//     console.error("RAZORPAY ERROR:", error);
-//     throw error;
-//   }
-// };
-
-export const createRazorpayOrder = async () => {
-  try {
-    const { userId } = await auth();
-    const user = await currentUser();
+    const user =
+      await currentUser();
 
     if (!userId || !user) {
-      throw new Error("Unauthorized");
+      throw new Error(
+        "Unauthorized"
+      );
     }
 
-    const userSubscription = await getUserSubscription();
+    const subscription =
+      await razorpay.subscriptions.create({
+        plan_id:
+          PLAN_IDS[plan],
 
-    if (userSubscription?.isActive) {
-      return { data: null };
-    }
+        customer_notify: 1,
 
-    const razorpayOrder = await razorpay.orders.create({
-      amount: 2000,
-      currency: "INR",
-      receipt: `receipt_${userId}`,
-      notes: {
-        userId,
-        email: user.emailAddresses[0]?.emailAddress || "",
-      },
-    });
+        total_count:
+          plan === "1month"
+            ? 1
+            : plan === "2month"
+            ? 2
+            : 3,
 
-    return { data: razorpayOrder.id };
+        notes: {
+          userId,
+          plan,
+        },
+      });
 
-  } catch (error) {
-    console.error("RAZORPAY ERROR:", error);
-    throw error;
-  }
-};
+    return subscription;
+  };
