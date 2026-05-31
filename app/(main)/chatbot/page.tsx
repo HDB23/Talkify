@@ -5,6 +5,7 @@ import { StickyWrapper } from "@/components/sticky-wrapper";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { UserProgress } from "@/components/user-progress";
+import { PremiumCard } from "@/components/premium-card";
 
 import {
   MessageCircle,
@@ -126,76 +127,72 @@ export default async function ChatbotLoader() {
             </div>
 
             {/* FEATURES */}
-            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
               {chatbotFeatures.map((feature) => {
                 const Icon = feature.icon;
 
                 return (
-                  <div
+                  <PremiumCard
                     key={feature.title}
-                    className="
-                      border-2
-                      rounded-2xl
-                      p-5
-                      bg-white
-                      hover:shadow-md
-                      transition-all
-                    "
+                    className="p-6"
                   >
                     <div className="flex items-start gap-4">
 
                       <div className="
-                        bg-cyan-100
-                        rounded-xl
-                        p-3
+                        bg-blue-50
+                        border
+                        border-blue-100
+                        rounded-2xl
+                        p-3.5
+                        shrink-0
                       ">
-                        <Icon className="h-6 w-6 text-cyan-700" />
+                        <Icon className="h-6 w-6 text-[#0059e3]" />
                       </div>
 
                       <div>
-                        <h3 className="font-bold text-lg text-neutral-800 mb-2">
+                        <h3 className="font-extrabold text-base text-neutral-800 mb-1 leading-snug">
                           {feature.title}
                         </h3>
 
-                        <p className="text-sm text-neutral-600 leading-relaxed">
+                        <p className="text-xs text-neutral-500 leading-relaxed">
                           {feature.description}
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </PremiumCard>
                 );
               })}
             </div>
 
             {/* HELP SECTION */}
-            <div className="w-full border-2 rounded-2xl p-6 bg-white mb-8">
+            <PremiumCard className="w-full p-8 mb-8">
 
-              <h2 className="text-2xl font-bold text-neutral-800 mb-4">
+              <h2 className="text-2xl font-extrabold text-neutral-800 mb-4 tracking-tight">
                 What can the chatbot help with?
               </h2>
 
-              <Separator className="mb-6" />
+              <Separator className="mb-6 bg-slate-100" />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                <div className="rounded-xl border bg-neutral-50 p-4 text-neutral-700">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-slate-600 font-medium text-sm">
                   • Subscription & billing support
                 </div>
 
-                <div className="rounded-xl border bg-neutral-50 p-4 text-neutral-700">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-slate-600 font-medium text-sm">
                   • Lesson & course guidance
                 </div>
 
-                <div className="rounded-xl border bg-neutral-50 p-4 text-neutral-700">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-slate-600 font-medium text-sm">
                   • Login & account issues
                 </div>
 
-                <div className="rounded-xl border bg-neutral-50 p-4 text-neutral-700">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 text-slate-600 font-medium text-sm">
                   • General Talkify assistance
                 </div>
               </div>
-            </div>
+            </PremiumCard>
 
             {/* SAFE SPACE FOR CHATBOT */}
             <div className="h-28" />

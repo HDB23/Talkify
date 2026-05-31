@@ -232,9 +232,9 @@ export const getUserSubscription = async () => {
   if (!data) return null;
 
   const isActive =
-  !!data.razorpaySubscriptionId &&
-  data.razorpayCurrentPeriodEnd.getTime() >
-    Date.now();
+    !!data.razorpaySubscriptionId &&
+    (data.subscriptionStatus === "active" ||
+      data.razorpayCurrentPeriodEnd.getTime() > Date.now());
 
   return {
     ...data,

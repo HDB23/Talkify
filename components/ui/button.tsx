@@ -9,19 +9,19 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        locked: "bg-neutral-200 text-primary-foreground hover:bg-neutral-200/90 border-neutral-400 border-b-4 active:border-b-0",
-        default: "bg-white text-black border-slate-200 border-2 border-b-4 active:border-b-2 hover:bg-slate-100 text-slate-500",
-        primary : "bg-sky-400 text-primary-foreground hover:bg-sky-400/90 border-sky-500 border-b-4 active:border-b-0",
-        primaryOutline: "bg-white text-sky-500 hover:bg-slate-100",
-        secondary: "bg-green-500 text-primary-foreground hover:bg-green-500/90 border-green-600 border-b-4 active:border-b-0",
-        secondaryOutline: "bg-white text-green-500 hover:bg-slate-100",
-        danger: "bg-rose-500 text-primary-foreground hover:bg-rose-500/90 border-rose-600 border-b-4 active:border-b-0",
-        dangerOutline: "bg-white text-rose-500 hover:bg-slate-100",
-        super: "bg-indigo-500 text-primary-foreground hover:bg-indigo-500/90 border-indigo-600 border-b-4 active:border-b-0",
-        superOutline: "bg-white text-indigo-500 hover:bg-slate-100",
-        ghost: "bg-transparent text-slate-500 border-transparent border-0 hover:bg-slate-100",
-        sidebar: "bg-transparent text-slate-500 border-2 border-transparent hover:bg-slate-100 transition-none",
-        sidebarOutline : "bg-sky-500/15 text-sky-500 border-sky-300 border-2 hover:bg-sky-500/20 transition-none"
+        locked: "bg-neutral-200 text-neutral-400 hover:bg-neutral-200/90 border-neutral-300 border-b-4 active:border-b-0",
+        default: "bg-white text-slate-600 border-slate-200 border-2 border-b-4 active:border-b-2 hover:bg-slate-50",
+        primary : "bg-gradient-to-b from-[#1a85ff] to-[#0059e3] text-white border-[#0047b3] border-b-4 active:border-b-0 active:translate-y-[2px] hover:brightness-105 shadow-[0_4px_12px_rgba(0,89,227,0.15)]",
+        primaryOutline: "bg-white text-[#0059e3] border-2 border-[#0059e3]/20 hover:bg-[#eef6ff] border-b-4 border-b-[#0059e3]/30 active:border-b-2",
+        secondary: "bg-gradient-to-b from-[#22c55e] to-[#16a34a] text-white border-[#15803d] border-b-4 active:border-b-0 active:translate-y-[2px] hover:brightness-105 shadow-[0_4px_12px_rgba(22,163,74,0.15)]",
+        secondaryOutline: "bg-white text-[#16a34a] border-2 border-[#16a34a]/20 hover:bg-green-50/50 border-b-4 border-b-[#16a34a]/30 active:border-b-2",
+        danger: "bg-gradient-to-b from-[#ef4444] to-[#dc2626] text-white border-[#b91c1c] border-b-4 active:border-b-0 active:translate-y-[2px] hover:brightness-105",
+        dangerOutline: "bg-white text-[#ef4444] border-2 border-[#ef4444]/20 hover:bg-rose-50/50 border-b-4 border-b-[#ef4444]/30 active:border-b-2",
+        super: "bg-gradient-to-b from-[#8b5cf6] to-[#7c3aed] text-white border-[#6d28d9] border-b-4 active:border-b-0 active:translate-y-[2px] hover:brightness-105 shadow-[0_4px_12px_rgba(124,58,237,0.15)]",
+        superOutline: "bg-white text-[#7c3aed] border-2 border-[#7c3aed]/20 hover:bg-indigo-50/50 border-b-4 border-b-[#7c3aed]/30 active:border-b-2",
+        ghost: "bg-transparent text-slate-500 border-transparent border-0 hover:bg-slate-100/80 hover:text-slate-700",
+        sidebar: "bg-transparent text-slate-500 border-2 border-transparent hover:bg-slate-100/50 transition-all rounded-2xl",
+        sidebarOutline : "bg-[#eaf3ff] text-[#0059e3] border-[#0059e3]/10 border-2 hover:bg-[#eaf3ff]/80 transition-all rounded-2xl"
       },
       size: {
         default: "h-11 px-4 py-2",

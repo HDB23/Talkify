@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import Image from "next/image";
+import { PremiumCard } from "@/components/premium-card";
 
 type Props = {
     title: string;
@@ -20,30 +21,32 @@ export const Card = ({
     active,
 }: Props) => {
     return (
-        <div 
+        <PremiumCard 
             onClick={() => onClick(id)}
-        className={cn(
-            "h-full border-2 rounded-xl border-b-4 hover:bg-black/5 cursor-pointer active:border-b-2 flex flex-col items-center justify-between p-3 pb-6 min-h-[200px] min-w-[150px] lg:min-h-[217px] lg:min-w-[200px]",
-            disabled && "pointer-events-none opacity-50"
-        )}
+            active={active}
+            activeBorderColor="border-blue-500 shadow-[0_12px_28px_rgba(0,89,227,0.12)] scale-[1.03]"
+            className={cn(
+                "h-full flex flex-col items-center justify-between p-4 pb-6 min-h-[210px] cursor-pointer active:scale-[0.98] select-none hover:border-blue-300",
+                disabled && "pointer-events-none opacity-50"
+            )}
         >
-            <div className="min-[24px] w-full flex items-center justify-end">
+            <div className="min-[24px] w-full flex items-center justify-end h-6">
                 {active && (
-                    <div className="rounded-md bg-green-600 flex items-center justify-center p-1.5">
-                        <Check className="text-white stroke-[4] h-4 w-4"/>
+                    <div className="rounded-full bg-blue-500 flex items-center justify-center p-1 shadow-sm">
+                        <Check className="text-white stroke-[4] h-3.5 w-3.5"/>
                     </div>
                 )}
             </div>
             <Image 
-            src={imageSrc}
-            alt={title}
-            height={70} 
-            width={93.33}
-            className="rounded-lg drop-shadow-md border object-cover"
+                src={imageSrc}
+                alt={title}
+                height={80} 
+                width={106.66}
+                className="rounded-2xl drop-shadow-md border border-slate-100 object-cover"
             />
-            <p className="text-neutral-700 text-center font-bold mt-3 ">
+            <p className="text-neutral-700 text-center font-bold mt-4 tracking-wide text-sm">
                 {title}
             </p>
-        </div>
+        </PremiumCard>
     );
 };

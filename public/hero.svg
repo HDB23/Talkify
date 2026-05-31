@@ -14,7 +14,7 @@
   <text x="500" y="468" text-anchor="middle" font-size="24" font-family="Arial" fill="white">中</text>
 
   <!-- Center Mascot Body -->
-  <rect x="225" y="225" width="150" height="150" rx="35" fill="#22c55e"/>
+  <rect x="225" y="225" width="150" height="150" rx="35" fill="#223dc5"/>
 
   <!-- Eyes -->
   <circle cx="270" cy="285" r="12" fill="white"/>
@@ -26,6 +26,6 @@
   <path d="M275 330 Q300 355 325 330" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
 
   <!-- Subtle Glow Effect -->
-  <circle cx="300" cy="300" r="170" fill="#22c55e" opacity="0.05"/>
+  <circle cx="300" cy="300" r="170" fill="#223dc5" opacity="0.05"/>
 
 </svg>

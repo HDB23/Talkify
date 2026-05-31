@@ -11,6 +11,7 @@ import {
 import { eq } from "drizzle-orm";
 
 import { razorpay } from "@/lib/razorpay";
+import { revalidatePath } from "next/cache";
 
 export async function POST() {
 
@@ -69,9 +70,9 @@ export async function POST() {
     await razorpay
     .subscriptions
     .cancel(
-        subscription
+      subscription
         .razorpaySubscriptionId,
-        1
+      1
     );
 
     // UPDATE DB STATUS
@@ -91,6 +92,10 @@ export async function POST() {
     console.log(
       "SUBSCRIPTION CANCELLED"
     );
+
+    // Revalidate server-rendered paths
+    revalidatePath("/shop");
+    revalidatePath("/settings/subscription");
 
     return NextResponse.json({
       success: true,

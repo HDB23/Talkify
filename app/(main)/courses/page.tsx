@@ -15,19 +15,18 @@ const CoursesPage = async() => {
     ])
 
     return (
-        <>
-            <div className="h-full max-w-[912px] px-3 mx-auto">
-                <h1 className="text-2xl font-bold text-neutral-700">
-                    Language Courses
-                </h1>
-                <List
-                    courses={courses}
-                    activeCourseId={userProgress?.activeCourseId}
-                />
-            </div>
-    
-    
-        </>
+        <div className="h-full max-w-[912px] px-6 mx-auto pt-6 pb-12">
+            <h1 className="text-3xl font-extrabold text-neutral-800 tracking-tight">
+                Language Courses
+            </h1>
+            <p className="text-muted-foreground mt-2 mb-6 text-base">
+                Choose a language to start your journey to effortless speaking.
+            </p>
+            <List
+                courses={courses}
+                activeCourseId={userProgress?.activeCourseId}
+            />
+        </div>
     )
 }
 

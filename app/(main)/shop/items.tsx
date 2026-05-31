@@ -1,11 +1,13 @@
 "use client";
 
-import { createRazorpaySubscription } from "@/actions/user-subscription";
+import { createRazorpaySubscription, checkSubscriptionStatus, activateSubscription } from "@/actions/user-subscription";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { Crown, Check } from "lucide-react";
+import { Crown, Check, Leaf, Star, BookOpen } from "lucide-react";
+import { PremiumCard } from "@/components/premium-card";
+import { cn } from "@/lib/utils";
 
 type Props = {
   hearts: number;
@@ -84,14 +86,49 @@ export const Items = ({
             color: "#58CC02",
           },
 
-          handler: function () {
-            toast.success(
-              "Payment successful!"
-            );
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
+          handler: async function (response: any) {
+            const toastId = toast.loading("Payment successful! Activating subscription...");
+            
+            try {
+              console.log("[Client Razorpay Handler] Initiating direct subscription activation for plan:", planId);
+              await activateSubscription(
+                response.razorpay_subscription_id,
+                response.razorpay_payment_id,
+                response.razorpay_signature,
+                planId as any
+              );
+              toast.dismiss(toastId);
+              toast.success("Subscription activated successfully!");
+              window.location.reload();
+            } catch (error) {
+              console.error("[Client Razorpay Handler] Direct activation failed, polling webhook fallback...", error);
+              toast.dismiss(toastId);
+              toast.loading("Syncing active subscription state...");
+              
+              // Fallback to webhook database polling
+              let checksCount = 0;
+              const maxPollingChecks = 8;
+              
+              const subscriptionPoll = setInterval(async () => {
+                checksCount++;
+                console.log("[Client Razorpay Handler] Polling subscription database status. Check count:", checksCount);
+                
+                try {
+                  const status = await checkSubscriptionStatus();
+                  if (status.isActive || checksCount >= maxPollingChecks) {
+                    clearInterval(subscriptionPoll);
+                    console.log("[Client Razorpay Handler] Status sync complete. Reloading window...");
+                    window.location.reload();
+                  }
+                } catch (pollError) {
+                  console.error("[Client Razorpay Handler] Failed checking subscription status:", pollError);
+                  if (checksCount >= maxPollingChecks) {
+                    clearInterval(subscriptionPoll);
+                    window.location.reload();
+                  }
+                }
+              }, 1200);
+            }
           },
         });
 
@@ -111,116 +148,150 @@ export const Items = ({
 };
 
   return (
-    <div className="grid md:grid-cols-3 gap-6 w-full">
+    <div className="grid md:grid-cols-3 gap-8 w-full mt-6">
+      {plans.map((plan) => {
+        // Dynamic icons and colors to match the reference design mockup exactly
+        let IconComponent = Crown;
+        let iconBg = "bg-yellow-50";
+        let iconColor = "text-yellow-600";
+        let priceColor = "text-neutral-800";
+        let cardBorderActiveColor = "border-blue-500";
+        let btnVariant: "default" | "primary" | "secondary" | "secondaryOutline" | "primaryOutline" | "super" | "superOutline" = "default";
+        let btnStyle = "";
 
-      {plans.map((plan) => (
-        <div
-          key={plan.id}
-          className={`relative rounded-3xl border-2 p-6 bg-white shadow-sm transition-all
-          ${
-            plan.popular
-              ? "border-green-500 scale-105"
-              : "border-neutral-200"
-          }`}
-        >
+        const activePlanId = currentPlan || (hasActiveSubscription ? "1month" : null);
+        const isCurrentPlan = activePlanId === plan.id;
+        const isUpgrade = hasActiveSubscription && !isCurrentPlan;
 
-          {plan.popular && (
-            <div className="absolute -top-3 right-4 bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold">
-              POPULAR
-            </div>
-          )}
+        if (plan.id === "1month") {
+          IconComponent = Leaf;
+          iconBg = "bg-emerald-50 border border-emerald-100";
+          iconColor = "text-emerald-500";
+          priceColor = "text-emerald-600";
+          btnVariant = isCurrentPlan ? "secondaryOutline" : "primaryOutline";
+          btnStyle = isCurrentPlan
+            ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50/50"
+            : "border-slate-200 text-slate-500 hover:bg-slate-50";
+        } else if (plan.id === "2month") {
+          IconComponent = Star;
+          iconBg = "bg-blue-50 border border-blue-100";
+          iconColor = "text-blue-500";
+          priceColor = "text-blue-600";
+          cardBorderActiveColor = "border-blue-500 shadow-[0_12px_32px_rgba(0,89,227,0.15)]";
+          btnVariant = isCurrentPlan ? "primaryOutline" : "primary";
+          btnStyle = isCurrentPlan
+            ? "border-blue-500 text-blue-600 hover:bg-blue-50/50"
+            : "";
+        } else if (plan.id === "3month") {
+          IconComponent = BookOpen;
+          iconBg = "bg-orange-50 border border-orange-100";
+          iconColor = "text-orange-500";
+          priceColor = "text-orange-600";
+          btnVariant = "primaryOutline";
+          btnStyle = isCurrentPlan
+            ? "border-orange-500 text-orange-600 hover:bg-orange-50/50"
+            : "border-orange-300 text-orange-500 hover:bg-orange-50/30 active:border-b-2";
+        }
 
-          <div className="flex items-center gap-2 mb-4">
-            <Crown className="text-yellow-500" />
-            <h2 className="text-2xl font-bold text-neutral-800">
-              {plan.title}
-            </h2>
-          </div>
+        return (
+          <PremiumCard
+            key={plan.id}
+            active={plan.popular}
+            activeBorderColor={cardBorderActiveColor}
+            className={cn(
+              "relative flex flex-col justify-between items-stretch w-full",
+              plan.popular ? "scale-[1.03] lg:scale-[1.05]" : ""
+            )}
+          >
+            {plan.popular && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-4 py-1.5 rounded-full font-bold uppercase tracking-wider shadow-md">
+                POPULAR
+              </div>
+            )}
 
-          <div className="mb-6">
-            <span className="text-4xl font-bold">
-              {plan.price}
-            </span>
+            <div className="flex flex-col items-stretch w-full">
+              {/* Card Header (Icon & Title) */}
+              <div className="flex flex-col items-center mb-6">
+                <div className={`p-4 rounded-full ${iconBg} mb-3 shadow-inner`}>
+                  <IconComponent className={`h-8 w-8 ${iconColor}`} />
+                </div>
+                <h3 className="text-xl font-bold text-neutral-800">
+                  {plan.title}
+                </h3>
+              </div>
 
-            <span className="text-muted-foreground">
-              /{plan.duration}
-            </span>
-          </div>
-
-          <div className="space-y-3 mb-8">
-
-            {[
-              "Unlimited Hearts",
-              "No Ads",
-              "Faster Progress",
-              "Premium Support",
-            ].map((feature) => (
-              <div
-                key={feature}
-                className="flex items-center gap-2"
-              >
-                <Check className="h-5 w-5 text-green-500" />
-
-                <span className="text-neutral-700">
-                  {feature}
+              {/* Price Container */}
+              <div className="text-center mb-6">
+                <span className={`text-4xl font-extrabold tracking-tight ${priceColor}`}>
+                  {plan.price}
+                </span>
+                <span className="text-slate-400 text-sm ml-1">
+                  /{plan.duration}
                 </span>
               </div>
-            ))}
 
-          </div>
+              {/* Feature Checklist */}
+              <div className="space-y-4 mb-8">
+                {[
+                  "Unlimited Hearts",
+                  "No Ads",
+                  "Faster Progress",
+                  "Premium Support",
+                ].map((feature) => (
+                  <div key={feature} className="flex items-center gap-x-3">
+                    <div className="bg-emerald-500 text-white rounded-full p-0.5 shadow-sm">
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                    </div>
+                    <span className="text-slate-600 font-medium text-sm">
+                      {feature}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <Button
-            className="w-full h-12 text-base font-bold rounded-2xl whitespace-normal py-7"
-            disabled={
+            {/* CTA Button */}
+            <Button
+              variant={btnVariant}
+              className={cn(
+                "w-full h-14 text-xs sm:text-sm font-extrabold rounded-2xl uppercase tracking-wider px-4 shrink-0 transition-all flex items-center justify-center shadow-sm",
+                btnStyle
+              )}
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                boxSizing: "border-box"
+              }}
+              disabled={
                 pending ||
-
-                (
-                    hasActiveSubscription &&
-
-                    PLAN_RANK[
-                    currentPlan as keyof typeof PLAN_RANK
-                    ] >
-
-                    PLAN_RANK[
-                    plan.id as keyof typeof PLAN_RANK
-                    ]
-                )
-            }
-            onClick={() => {
-
-                if (currentPlan === plan.id) {
-                    window.location.href =
-                    "/settings/subscription";
-
-                    return;
+                (hasActiveSubscription &&
+                  PLAN_RANK[activePlanId as keyof typeof PLAN_RANK] >
+                    PLAN_RANK[plan.id as keyof typeof PLAN_RANK])
+              }
+              onClick={() => {
+                if (isCurrentPlan) {
+                  window.location.href = "/settings/subscription";
+                  return;
                 }
-
                 onUpgrade(plan.id);
-            }}
-          >
-            {currentPlan === plan.id
+              }}
+            >
+              {isCurrentPlan
                 ? "Current Plan"
-
                 : hasActiveSubscription &&
-                    PLAN_RANK[
-                    currentPlan as keyof typeof PLAN_RANK
-                    ] >
-                    PLAN_RANK[
-                    plan.id as keyof typeof PLAN_RANK
-                    ]
-
+                  PLAN_RANK[activePlanId as keyof typeof PLAN_RANK] >
+                    PLAN_RANK[plan.id as keyof typeof PLAN_RANK]
                 ? "Lower Plan"
-
                 : hasActiveSubscription
-
                 ? "Upgrade"
-
-                : "Choose Plan"
-            }
-          </Button>
-
-        </div>
-      ))}
+                : "Choose Plan"}
+            </Button>
+          </PremiumCard>
+        );
+      })}
     </div>
   );
 };

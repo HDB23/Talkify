@@ -26,7 +26,7 @@ export const Footer = ({
       className={cn(
         "lg:h-[140px] h-[110px] border-t-2",
         status === "correct" &&
-          "border-transparent bg-green-100",
+          "border-transparent bg-blue-100",
         status === "wrong" &&
           "border-transparent bg-rose-100"
       )}
@@ -49,7 +49,7 @@ export const Footer = ({
       >
         {/* STATUS MESSAGE */}
         {status === "correct" && (
-          <div className="text-green-500 font-bold text-base lg:text-2xl flex items-center">
+          <div className="text-blue-500 font-bold text-base lg:text-2xl flex items-center">
             <CheckCircle className="h-6 w-6 lg:h-10 lg:w-10 mr-4" />
             Nicely done!
           </div>
@@ -85,7 +85,7 @@ export const Footer = ({
           variant={
             status === "wrong"
               ? "danger"
-              : "secondary"
+              : "primary"
           }
         >
           {status === "none" && "Check"}

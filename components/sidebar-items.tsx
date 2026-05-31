@@ -22,18 +22,18 @@ export const SidebarItem = ({
     return (
         <Button
             variant={active ? "sidebarOutline" : "sidebar"}
-            className="justify-start h-[52px]"
+            className="justify-start h-[52px] w-full px-4 rounded-2xl font-bold transition-all uppercase tracking-wider text-sm"
             asChild
         >
-            <Link href={ href }>
+            <Link href={ href } className="flex items-center w-full">
                 <Image 
                     src={iconSrc}
                     alt={label}
-                    className="mr-5"
-                    height={32}
-                    width={32}
+                    className="mr-5 shrink-0"
+                    height={28}
+                    width={28}
                 />
-                {label}
+                <span className="truncate">{label}</span>
             </Link>
         </Button>
     );
