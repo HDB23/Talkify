@@ -16,6 +16,10 @@ import { ResultCard } from "./result-card";
 import { useRouter } from "next/navigation";
 import { useHeartsModal } from "@/store/use-hearts-modal";
 import { usePracticeModal } from "@/store/use-practice-modal";
+import { Badge, badgeConfigs } from "@/components/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sparkles, Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Props = {
     initialPercentage: number,
@@ -29,6 +33,7 @@ type Props = {
     userSubscription: typeof userSubscription.$inferSelect & {
         isActive: boolean;
     } | null;
+    initialPoints: number;
 };
 
 export const Quiz = ({ 
@@ -37,11 +42,14 @@ export const Quiz = ({
     initialLessonId,
     initialLessonChallenges,
     userSubscription,
+    initialPoints,
  }: Props) => {
 
     const { open: openHeartsModal } = useHeartsModal();
     const { open: openPracticeModal } = usePracticeModal();
     const [correctOptionId, setCorrectOptionId] = useState<number | null>(null);
+    const [celebrated, setCelebrated] = useState(false);
+    const [currentUnlockIndex, setCurrentUnlockIndex] = useState(0);
 
     useMount(() => {
         if(initialPercentage === 100) {
@@ -167,6 +175,23 @@ export const Quiz = ({
     };
     
     if(!challenge) {
+        const newlyUnlockedBadges: ("bronze" | "silver" | "gold" | "platinum" | "diamond")[] = [];
+        const isPracticeSession = initialPercentage === 100;
+        const newlyCompletedCount = isPracticeSession ? 0 : challenges.filter(c => !c.completed).length;
+        const earnedPoints = newlyCompletedCount * 10;
+        const finalPoints = initialPoints + earnedPoints;
+
+        if (initialPoints < 20 && finalPoints >= 20) newlyUnlockedBadges.push("bronze");
+        if (initialPoints < 50 && finalPoints >= 50) newlyUnlockedBadges.push("silver");
+        if (initialPoints < 100 && finalPoints >= 100) newlyUnlockedBadges.push("gold");
+        if (initialPoints < 500 && finalPoints >= 500) newlyUnlockedBadges.push("platinum");
+        if (initialPoints < 1000 && finalPoints >= 1000) newlyUnlockedBadges.push("diamond");
+
+        const hasUnlocked = newlyUnlockedBadges.length > 0;
+        const showCelebrationModal = hasUnlocked && !celebrated;
+        const currentBadge = showCelebrationModal ? newlyUnlockedBadges[currentUnlockIndex] : null;
+        const badgeConfig = currentBadge ? badgeConfigs[currentBadge] : null;
+
         return (
             <>
                 {finishAudio}
@@ -177,6 +202,62 @@ export const Quiz = ({
                     numberOfPieces={500}
                     tweenDuration={10000}
                 />
+
+                {/* Badge Unlock Celebration Dialog */}
+                {showCelebrationModal && badgeConfig && currentBadge && (
+                    <Dialog open={showCelebrationModal} onOpenChange={(open) => {
+                        if (!open) {
+                            if (currentUnlockIndex < newlyUnlockedBadges.length - 1) {
+                                setCurrentUnlockIndex(prev => prev + 1);
+                            } else {
+                                setCelebrated(true);
+                            }
+                        }
+                    }}>
+                        <DialogContent className="sm:max-w-md rounded-3xl p-6 border-slate-200 z-[99999]">
+                            <DialogHeader className="flex flex-col items-center justify-center text-center">
+                                <div className="relative my-6 flex items-center justify-center">
+                                    <div className={`absolute inset-0 blur-3xl opacity-50 rounded-full bg-gradient-to-br ${badgeConfig.colorClasses}`} style={{ transform: "scale(1.5)" }} />
+                                    <div className="relative animate-bounce">
+                                        <Badge type={currentBadge} size="lg" locked={false} interactive={false} />
+                                    </div>
+                                    <Sparkles className="absolute -top-4 -right-4 h-8 w-8 text-yellow-400 animate-pulse" />
+                                    <Award className="absolute -bottom-4 -left-4 h-8 w-8 text-purple-400 animate-pulse" />
+                                </div>
+
+                                <DialogTitle className="text-2xl font-black text-slate-800 tracking-tight">
+                                    New Badge Unlocked! 🎉
+                                </DialogTitle>
+                                <DialogDescription className="text-sm text-slate-500 font-medium max-w-sm mt-2">
+                                    You&apos;ve unlocked the <span className="font-extrabold text-[#0059e3]">{badgeConfig.title}</span> by reaching <span className="font-bold">{badgeConfig.xp} XP</span>!
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="flex flex-col gap-y-3 mt-4 items-center">
+                                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 w-full text-center">
+                                    <span className="text-sm font-semibold text-slate-500 block uppercase tracking-wider text-[10px]">Badge Earned</span>
+                                    <span className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-x-2 mt-1">
+                                        {badgeConfig.emoji} {badgeConfig.title.toUpperCase()}
+                                    </span>
+                                </div>
+                                
+                                <Button 
+                                    onClick={() => {
+                                        if (currentUnlockIndex < newlyUnlockedBadges.length - 1) {
+                                            setCurrentUnlockIndex(prev => prev + 1);
+                                        } else {
+                                            setCelebrated(true);
+                                        }
+                                    }}
+                                    className="w-full rounded-2xl h-12 font-bold bg-[#0059e3] hover:bg-[#0059e3]/90 border-b-4 border-b-blue-800 active:border-b-0"
+                                >
+                                    Awesome!
+                                </Button>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
+
                 <div className="flex flex-col gap-y-4 lg:gap-y-8 max-w-lg mx-auto text-center items-center justify-center h-full">
                     <Image 
                         src="/finish.svg"

@@ -21,7 +21,7 @@ const plans = [
     id: "1month",
     title: "1 Month",
     duration: "month",
-    price: "₹199",
+    price: "₹29",
     popular: false,
   },
 
@@ -29,7 +29,7 @@ const plans = [
     id: "2month",
     title: "2 Months",
     duration: "2 months",
-    price: "₹349",
+    price: "₹39",
     popular: true,
   },
 
@@ -37,7 +37,7 @@ const plans = [
     id: "3month",
     title: "3 Months",
     duration: "3 months",
-    price: "₹499",
+    price: "₹49",
     popular: false,
   },
 ];
@@ -83,7 +83,7 @@ export const Items = ({
             "Unlock unlimited hearts",
 
           theme: {
-            color: "#58CC02",
+            color: "#0059e3",
           },
 
           handler: async function (response: any) {

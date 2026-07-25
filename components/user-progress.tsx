@@ -24,7 +24,7 @@ export const UserProgress = ({ activeCourse, points, hearts, hasActiveSubscripti
                     height={32}/>
                 </Button>
             </Link>
-            <Link href="/shop">
+            <Link href="/quests">
                 <Button variant="ghost" className="text-orange-500">
                     <Image src="/points.svg" height={28} width={28} alt="points" className="mr-2"/>
                     { points }
