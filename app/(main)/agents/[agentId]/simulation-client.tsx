@@ -18,7 +18,10 @@ import {
   getWelcomeMessageAction,
   ChatMessage 
 } from "@/actions/agents";
+import { updateStreakAction } from "@/actions/user-progress";
 import { cn } from "@/lib/utils";
+import { SCRIPTED_SCENARIOS, ScriptedOption } from "@/lib/scripted-scenarios";
+import { Zap, ListOrdered, CheckCircle, HelpCircle, RotateCcw } from "lucide-react";
 
 interface SimulationClientProps {
   agentId: string;
@@ -56,19 +59,33 @@ export const SimulationClient = ({
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const pdfTemplateRef = useRef<HTMLDivElement>(null);
 
+  // Scripted Practice Mode States
+  const [practiceMode, setPracticeMode] = useState<"ai" | "scripted">("ai");
+  const [scriptedTurnIndex, setScriptedTurnIndex] = useState(0);
+  const [scriptedMistakes, setScriptedMistakes] = useState<Array<{ original: string; corrected: string; explanation: string }>>([]);
+  const [scriptedCorrectCount, setScriptedCorrectCount] = useState(0);
+
   // Web Speech API instances
   const [recognition, setRecognition] = useState<any>(null);
 
   // Load welcome message on mount
   useEffect(() => {
     const initWelcome = async () => {
-      const welcome = await getWelcomeMessageAction(agentId);
-      setMessages([{ role: "assistant", content: welcome }]);
-      
-      // Let voices load before speaking welcome
-      setTimeout(() => {
-        speakText(welcome);
-      }, 800);
+      try {
+        const welcomeData = await getWelcomeMessageAction(agentId);
+        if ("error" in welcomeData && welcomeData.error) {
+          setApiError(welcomeData.error);
+        }
+        
+        const welcomeText = welcomeData.welcomeMessage || "Hello! Let's practice speaking English.";
+        setMessages([{ role: "assistant", content: welcomeText }]);
+        
+        setTimeout(() => {
+          speakText(welcomeText);
+        }, 800);
+      } catch (err: any) {
+        setApiError("RESOURCE_EXHAUSTED");
+      }
     };
     initWelcome();
 
@@ -212,14 +229,47 @@ export const SimulationClient = ({
   };
 
   const handleFinishSession = async () => {
-    // We require at least one exchange from user
-    if (messages.filter(m => m.role === "user").length === 0) {
-      alert("Please speak or type a few lines first before finishing!");
+    const userMsgCount = messages.filter(m => m.role === "user").length;
+    if (userMsgCount === 0) {
+      alert("Please speak, type, or select at least one response first before finishing!");
       return;
     }
 
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
+    }
+
+    if (practiceMode === "scripted") {
+      const turnsCompleted = Math.max(1, userMsgCount);
+      const accuracyPct = Math.round((scriptedCorrectCount / turnsCompleted) * 100);
+      const grammarScore = Math.min(100, Math.max(50, accuracyPct));
+      const vocabularyScore = Math.min(100, Math.max(55, accuracyPct + 5));
+      const fluencyScore = Math.min(100, Math.max(60, accuracyPct + 2));
+      const overallScore = Math.round((grammarScore + vocabularyScore + fluencyScore) / 3);
+
+      const feedbackList = [
+        accuracyPct >= 80 
+          ? "Great accuracy across your completed dialogue turns!" 
+          : "Good effort practicing this scenario!",
+        `You completed ${turnsCompleted} guided turn(s) with ${accuracyPct}% accuracy (${scriptedCorrectCount}/${turnsCompleted} correct).`,
+        "Review your recommended corrections below to refine your speech choices."
+      ];
+
+      setEvaluationResult({
+        overallScore,
+        grammarScore,
+        vocabularyScore,
+        fluencyScore,
+        feedback: feedbackList,
+        corrections: scriptedMistakes,
+        accuracyPercentage: accuracyPct,
+        correctCount: scriptedCorrectCount,
+        totalTurns: turnsCompleted,
+        isScripted: true,
+      });
+      setShowConfetti(true);
+      triggerStreakUpdate();
+      return;
     }
 
     setStatus("evaluating");
@@ -237,7 +287,120 @@ export const SimulationClient = ({
 
     setEvaluationResult(result.evaluation);
     setShowConfetti(true);
+    triggerStreakUpdate();
     setStatus("idle");
+  };
+
+  const currentScriptedScenario = SCRIPTED_SCENARIOS[agentId] || SCRIPTED_SCENARIOS["coffee-shop"];
+  const currentScriptedTurn = currentScriptedScenario.turns[scriptedTurnIndex] || currentScriptedScenario.turns[0];
+
+  const startScriptedMode = () => {
+    setPracticeMode("scripted");
+    setApiError(null);
+    setScriptedTurnIndex(0);
+    setScriptedMistakes([]);
+    setScriptedCorrectCount(0);
+    setEvaluationResult(null);
+
+    const initialTurn = currentScriptedScenario.turns[0];
+    const welcomeText = currentScriptedScenario.welcomeMessage || initialTurn.partnerPrompt;
+    setMessages([
+      { role: "assistant", content: welcomeText }
+    ]);
+
+    setTimeout(() => {
+      speakText(welcomeText);
+    }, 400);
+  };
+
+  const startAiMode = async () => {
+    setPracticeMode("ai");
+    setApiError(null);
+    setEvaluationResult(null);
+    const welcomeData = await getWelcomeMessageAction(agentId);
+    if ("error" in welcomeData && welcomeData.error) {
+      setApiError(welcomeData.error);
+    }
+    const welcomeText = welcomeData.welcomeMessage || "Hello! Let's practice speaking English.";
+    setMessages([{ role: "assistant", content: welcomeText }]);
+    setTimeout(() => {
+      speakText(welcomeText);
+    }, 400);
+  };
+
+  const handleSelectScriptedOption = (option: ScriptedOption) => {
+    if (status === "thinking" || status === "evaluating") return;
+
+    const currentTurn = currentScriptedScenario.turns[scriptedTurnIndex];
+    const updatedCorrectCount = option.isCorrect ? scriptedCorrectCount + 1 : scriptedCorrectCount;
+    
+    let newMistakes = [...scriptedMistakes];
+    if (!option.isCorrect) {
+      const correctOpt = currentTurn.options.find(o => o.isCorrect)?.text || "";
+      newMistakes.push({
+        original: option.text,
+        corrected: correctOpt,
+        explanation: option.correction || "Choose a more natural, grammatically standard expression."
+      });
+    }
+
+    setScriptedCorrectCount(updatedCorrectCount);
+    setScriptedMistakes(newMistakes);
+
+    const userMsg: ChatMessage = { role: "user", content: option.text };
+    const aiFollowUp: ChatMessage = { role: "assistant", content: currentTurn.partnerFollowUp };
+
+    const isFinalTurn = scriptedTurnIndex >= currentScriptedScenario.turns.length - 1;
+
+    if (isFinalTurn) {
+      setMessages(prev => [...prev, userMsg, aiFollowUp]);
+      setTimeout(() => {
+        speakText(currentTurn.partnerFollowUp);
+      }, 200);
+
+      const totalTurns = currentScriptedScenario.turns.length;
+      const accuracyPct = Math.round((updatedCorrectCount / totalTurns) * 100);
+      const grammarScore = Math.min(100, Math.max(50, accuracyPct));
+      const vocabularyScore = Math.min(100, Math.max(55, accuracyPct + 5));
+      const fluencyScore = Math.min(100, Math.max(60, accuracyPct + 2));
+      const overallScore = Math.round((grammarScore + vocabularyScore + fluencyScore) / 3);
+
+      const feedbackList = [
+        accuracyPct >= 80 
+          ? "Excellent fluency and grammar accuracy across all scenario turns!" 
+          : accuracyPct >= 60 
+            ? "Good progress! You answered most dialogue turns accurately." 
+            : "Keep practicing! Focus on using polite and standard expressions.",
+        `You completed all ${totalTurns} guided practice turns with ${accuracyPct}% accuracy (${updatedCorrectCount}/${totalTurns} correct).`,
+        "Review the recommended corrections below to refine your speech choices."
+      ];
+
+      setTimeout(() => {
+        setEvaluationResult({
+          overallScore,
+          grammarScore,
+          vocabularyScore,
+          fluencyScore,
+          feedback: feedbackList,
+          corrections: newMistakes,
+          accuracyPercentage: accuracyPct,
+          correctCount: updatedCorrectCount,
+          totalTurns: totalTurns,
+          isScripted: true,
+        });
+        setShowConfetti(true);
+        triggerStreakUpdate();
+      }, 1000);
+
+    } else {
+      // Fix double reply: only push user message and AI partner follow-up
+      setMessages(prev => [...prev, userMsg, aiFollowUp]);
+      setScriptedTurnIndex(prev => prev + 1);
+
+      setTimeout(() => {
+        speakText(currentTurn.partnerFollowUp);
+      }, 200);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -442,12 +605,24 @@ export const SimulationClient = ({
     transition: { repeat: Infinity, duration: 1.5 }
   } : { y: 0, rotate: 0, scale: 1 };
 
+  const triggerStreakUpdate = async () => {
+    try {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const localDateStr = `${yyyy}-${mm}-${dd}`;
+      await updateStreakAction(localDateStr);
+    } catch (e) {
+      console.error("Failed to update streak:", e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 pb-16 pt-4 relative">
       {showConfetti && <ReactConfetti width={width} height={height} recycle={false} numberOfPieces={350} />}
 
-      {/* ERROR MODAL INSTRUCTION FOR MISSING GEMINI KEY */}
-      {/* ERROR MODAL INSTRUCTION */}
+      {/* ERROR MODAL INSTRUCTION FOR MISSING GEMINI KEY OR QUOTA EXHAUSTED */}
       <AnimatePresence>
         {apiError && (
           <motion.div 
@@ -460,47 +635,57 @@ export const SimulationClient = ({
               initial={{ scale: 0.9, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 15 }}
-              className="bg-white rounded-3xl p-8 max-w-lg w-full border border-rose-100 shadow-2xl relative"
+              className="bg-white rounded-3xl p-8 max-w-lg w-full border border-purple-100 shadow-2xl relative text-center flex flex-col items-center"
             >
-              <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-full flex items-center justify-center mb-5 text-rose-500 animate-pulse">
-                <AlertCircle className="h-8 w-8" />
+              <div className="w-16 h-16 bg-purple-50 border border-purple-100 rounded-full flex items-center justify-center mb-5 text-purple-600 animate-bounce">
+                <Zap className="h-8 w-8 fill-purple-600" />
               </div>
-              <h2 className="text-2xl font-black text-slate-800 mb-3">
-                {apiError === "NO_API_KEY" ? "Gemini API Key Required" : "AI Simulation Error"}
-              </h2>
-              <div className="text-slate-600 text-sm font-medium mb-5 leading-relaxed">
-                {apiError === "NO_API_KEY" ? (
-                  <p>
-                    We use the Google Gemini AI model to generate conversation responses and evaluate communication fluency. 
-                    Please set up your API Key inside the project's <code className="bg-slate-100 px-1.5 py-0.5 rounded text-rose-600 font-bold font-mono">.env</code> file:
+
+              {apiError.toLowerCase().includes("429") || apiError.toLowerCase().includes("quota") || apiError.toLowerCase().includes("rate limit") || apiError.toLowerCase().includes("resource_exhausted") ? (
+                <>
+                  <h2 className="text-2xl font-black text-slate-800 mb-2">
+                    Daily AI Quota Reached
+                  </h2>
+                  <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
+                    The daily AI quota is currently exhausted. Please <strong className="text-slate-800">try again tomorrow</strong> or switch to <strong className="text-purple-600">Scripted Mode</strong> now to practice offline without any limits!
                   </p>
-                ) : (
-                  <p>
-                    An error occurred while communicating with the AI agent. Details: 
-                    <span className="block mt-2.5 text-rose-600 bg-rose-50 border border-rose-100 p-3 rounded-xl font-bold font-mono text-xs overflow-x-auto">
-                      {apiError}
-                    </span>
+                </>
+              ) : apiError === "NO_API_KEY" ? (
+                <>
+                  <h2 className="text-2xl font-black text-slate-800 mb-2">
+                    AI Key Required
+                  </h2>
+                  <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
+                    Gemini API key is not configured. Please try again tomorrow or switch to Scripted Mode below.
                   </p>
-                )}
-              </div>
-              {apiError === "NO_API_KEY" && (
-                <pre className="bg-slate-900 text-slate-200 p-4 rounded-xl text-xs font-mono font-bold select-all mb-6">
-                  GEMINI_API_KEY=your_gemini_api_key_here
-                </pre>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-black text-slate-800 mb-2">
+                    AI Service Temporarily Unavailable
+                  </h2>
+                  <p className="text-slate-600 text-sm font-medium mb-6 leading-relaxed">
+                    Please try again tomorrow or switch to Scripted Mode right now to keep practicing.
+                  </p>
+                </>
               )}
-              <div className="flex flex-col gap-2">
+
+              <div className="flex flex-col gap-2.5 w-full">
                 <Button 
-                  variant="danger" 
-                  onClick={() => setApiError(null)} 
-                  className="w-full rounded-2xl animate-pulse"
+                  variant="primary" 
+                  onClick={startScriptedMode} 
+                  className="w-full rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold flex items-center justify-center gap-2 h-12 text-sm uppercase shadow-lg shadow-purple-500/25"
                 >
-                  Close & Retry
+                  <Zap className="h-4 w-4 fill-white" />
+                  Switch to Scripted Mode Now
                 </Button>
-                <Link href="/agents" className="w-full">
-                  <Button variant="default" className="w-full rounded-2xl border-slate-200 border-2">
-                    Back to AI Agents Dashboard
-                  </Button>
-                </Link>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setApiError(null)} 
+                  className="w-full rounded-2xl h-11 text-xs font-extrabold uppercase text-slate-500 hover:bg-slate-100"
+                >
+                  Try Again Tomorrow / Close
+                </Button>
               </div>
             </motion.div>
           </motion.div>
@@ -701,42 +886,91 @@ export const SimulationClient = ({
 
       <div className="max-w-4xl mx-auto px-4 h-full flex flex-col">
         
-        {/* BACK / NAV HEADER */}
-        <div className="flex items-center justify-between border-b pb-4 mb-4">
-          <div className="flex items-center gap-4">
-            <Link href="/agents">
-              <Button variant="ghost" className="h-10 w-10 p-0 rounded-full border border-slate-200 bg-white">
-                <ArrowLeft className="h-5 w-5 text-slate-600" />
+        {/* BACK / NAV HEADER - RESPONSIVE FOR MOBILE */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 mb-4 gap-3">
+          <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto">
+            <div className="flex items-center gap-2.5 sm:gap-4">
+              <Link href="/agents">
+                <Button variant="ghost" className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-full border border-slate-200 bg-white shrink-0">
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
+                </Button>
+              </Link>
+              <div>
+                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-400">Simulation Studio</span>
+                <h1 className="text-base sm:text-lg font-black text-slate-800 leading-none mt-0.5 truncate max-w-[180px] sm:max-w-none">{agentTitle}</h1>
+              </div>
+            </div>
+
+            {/* MOBILE ONLY TTS TOGGLE */}
+            <div className="sm:hidden">
+              <Button 
+                variant="ghost" 
+                onClick={() => setTtsEnabled(!ttsEnabled)} 
+                className={cn(
+                  "h-9 w-9 p-0 rounded-full border bg-white text-slate-600 transition-colors shrink-0",
+                  ttsEnabled ? "text-blue-500 border-blue-200" : "text-slate-400 border-slate-200"
+                )}
+                title={ttsEnabled ? "Text-to-Speech active" : "Text-to-Speech muted"}
+              >
+                {ttsEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
               </Button>
-            </Link>
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Simulation Studio</span>
-              <h1 className="text-lg font-black text-slate-800 leading-none mt-0.5">{agentTitle}</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-x-2">
-            {/* SPEECH SYNTHESIS SETTING */}
-            <Button 
-              variant="ghost" 
-              onClick={() => setTtsEnabled(!ttsEnabled)} 
-              className={cn(
-                "h-10 w-10 p-0 rounded-full border bg-white text-slate-600 transition-colors",
-                ttsEnabled ? "text-blue-500 border-blue-200" : "text-slate-400 border-slate-200"
-              )}
-              title={ttsEnabled ? "Text-to-Speech active" : "Text-to-Speech muted"}
-            >
-              {ttsEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-            </Button>
+          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-3 w-full sm:w-auto">
+            {/* MODE DUAL SEGMENTED TOGGLE SWITCH */}
+            <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200 flex items-center gap-1 shadow-inner shrink-0">
+              <button
+                type="button"
+                onClick={() => { if (practiceMode !== "ai") startAiMode(); }}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all",
+                  practiceMode === "ai"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                <span>AI</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (practiceMode !== "scripted") startScriptedMode(); }}
+                className={cn(
+                  "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all",
+                  practiceMode === "scripted"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                <span>Scripted</span>
+              </button>
+            </div>
+
+            {/* DESKTOP TTS TOGGLE */}
+            <div className="hidden sm:block">
+              <Button 
+                variant="ghost" 
+                onClick={() => setTtsEnabled(!ttsEnabled)} 
+                className={cn(
+                  "h-10 w-10 p-0 rounded-full border bg-white text-slate-600 transition-colors shrink-0",
+                  ttsEnabled ? "text-blue-500 border-blue-200" : "text-slate-400 border-slate-200"
+                )}
+                title={ttsEnabled ? "Text-to-Speech active" : "Text-to-Speech muted"}
+              >
+                {ttsEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+              </Button>
+            </div>
             
             {/* FINISH SESSION BTN */}
             <Button 
               variant="secondary" 
               onClick={handleFinishSession}
               disabled={messages.filter(m => m.role === "user").length === 0 || status === "evaluating"}
-              className="rounded-2xl shadow-sm text-xs"
+              className="rounded-2xl shadow-sm text-[11px] sm:text-xs px-3 sm:px-4 h-9 sm:h-10 shrink-0 font-extrabold"
             >
-              Finish & Evaluate
+              Evaluate
             </Button>
           </div>
         </div>
@@ -859,43 +1093,72 @@ export const SimulationClient = ({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* MESSAGE INPUT FORM */}
-            <form onSubmit={handleSendMessage} className="border-t p-4 flex gap-2 items-center bg-slate-50/50">
-              
-              {/* MIC TOGGLE BTN */}
-              <Button 
-                type="button" 
-                variant="ghost" 
-                onClick={toggleMic}
-                className={cn(
-                  "h-12 w-12 p-0 rounded-2xl border text-white transition-all shadow-sm",
-                  isRecording 
-                    ? "bg-red-500 hover:bg-red-600 border-red-400" 
-                    : "bg-slate-800 hover:bg-slate-900 border-slate-700"
-                )}
-                title={isRecording ? "Stop voice listening" : "Start speaking"}
-              >
-                {isRecording ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5 animate-pulse" />}
-              </Button>
+            {/* MESSAGE INPUT FORM OR SCRIPTED OPTIONS SELECTOR */}
+            {practiceMode === "scripted" ? (
+              <div className="border-t p-3 sm:p-4 bg-purple-50/40 flex flex-col gap-2.5 sm:gap-3 w-full max-w-full overflow-hidden box-border">
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                    <HelpCircle className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                    Select your response:
+                  </p>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full shrink-0">
+                    Turn {scriptedTurnIndex + 1} / {currentScriptedScenario.turns.length}
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
+                  {currentScriptedTurn.options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => handleSelectScriptedOption(opt)}
+                      disabled={status === "thinking" || status === "evaluating"}
+                      className="w-full text-left bg-white hover:bg-purple-50 active:bg-purple-100 border border-slate-200/90 hover:border-purple-400 rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm font-semibold text-slate-800 transition-all shadow-sm flex items-center justify-between gap-2.5 group disabled:opacity-50"
+                    >
+                      <span className="leading-snug">{opt.text}</span>
+                      <span className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-slate-100 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center text-[10px] font-black shrink-0 transition-colors">
+                        →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSendMessage} className="border-t p-2.5 sm:p-4 flex gap-2 items-center bg-slate-50/50 w-full max-w-full overflow-hidden box-border">
+                {/* MIC TOGGLE BTN */}
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={toggleMic}
+                  className={cn(
+                    "h-10 w-10 sm:h-12 sm:w-12 p-0 rounded-2xl border text-white transition-all shadow-sm shrink-0",
+                    isRecording 
+                      ? "bg-red-500 hover:bg-red-600 border-red-400" 
+                      : "bg-slate-800 hover:bg-slate-900 border-slate-700"
+                  )}
+                  title={isRecording ? "Stop voice listening" : "Start speaking"}
+                >
+                  {isRecording ? <MicOff className="h-4.5 w-4.5 sm:h-5 sm:w-5" /> : <Mic className="h-4.5 w-4.5 sm:h-5 sm:w-5 animate-pulse" />}
+                </Button>
 
-              <input 
-                type="text" 
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder={isRecording ? "Listening to your voice..." : "Type your message or click Mic to speak..."}
-                disabled={status === "thinking" || status === "evaluating"}
-                className="flex-1 h-12 bg-white border border-slate-200 rounded-2xl px-4 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition-colors shadow-sm disabled:opacity-50"
-              />
+                <input 
+                  type="text" 
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder={isRecording ? "Listening..." : "Type your message or speak..."}
+                  disabled={status === "thinking" || status === "evaluating"}
+                  className="flex-1 min-w-0 h-10 sm:h-12 bg-white border border-slate-200 rounded-2xl px-3 sm:px-4 text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition-colors shadow-sm disabled:opacity-50"
+                />
 
-              {/* SEND BTN */}
-              <Button 
-                type="submit" 
-                disabled={!inputMessage.trim() || status === "thinking"}
-                className="h-12 w-12 p-0 rounded-2xl bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white shadow-sm flex items-center justify-center disabled:opacity-40"
-              >
-                <Send className="h-4.5 w-4.5" />
-              </Button>
-            </form>
+                {/* SEND BTN */}
+                <Button 
+                  type="submit" 
+                  disabled={!inputMessage.trim() || status === "thinking"}
+                  className="h-10 w-10 sm:h-12 sm:w-12 p-0 rounded-2xl bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-40"
+                >
+                  <Send className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
+                </Button>
+              </form>
+            )}
 
           </div>
 

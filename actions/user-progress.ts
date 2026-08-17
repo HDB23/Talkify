@@ -211,12 +211,14 @@ export const updateStreakAction = async (localDateStr: string) => {
     await db.update(userProgress).set({
         streak: newStreak,
         lastActiveDate: localDateStr,
+        points: currentUserProgress.points + 15,
     }).where(eq(userProgress.userId, userId));
 
     revalidatePath("/learn");
     revalidatePath("/shop");
     revalidatePath("/quests");
     revalidatePath("/leaderboard");
+    revalidatePath("/agents");
 
     return { streak: newStreak, lastActiveDate: localDateStr };
 };

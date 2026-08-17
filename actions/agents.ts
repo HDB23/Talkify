@@ -33,7 +33,16 @@ export interface ChatMessage {
 }
 
 export const getWelcomeMessageAction = async (agentId: string) => {
-  return SCENARIOS[agentId]?.welcomeMessage || "Hello! Let's practice speaking English.";
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+  const openrouterKey = process.env.OPENROUTER_API_KEY || "";
+
+  const welcomeMessage = SCENARIOS[agentId]?.welcomeMessage || "Hello! Let's practice speaking English.";
+
+  if (!geminiKey && !openrouterKey) {
+    return { error: "NO_API_KEY", welcomeMessage };
+  }
+
+  return { welcomeMessage };
 };
 
 export const chatWithAgentAction = async (messages: ChatMessage[], agentId: string) => {
@@ -191,15 +200,20 @@ Ensure you only evaluate the user's messages, not the AI agent's. If there are n
       };
     }
 
-    // Ensure required properties exist
+    // Ensure required properties exist and compute overallScore as weighted average
+    const grammarScore = Math.min(100, Math.max(1, Number(parsedResult.grammarScore) || 80));
+    const vocabularyScore = Math.min(100, Math.max(1, Number(parsedResult.vocabularyScore) || 80));
+    const fluencyScore = Math.min(100, Math.max(1, Number(parsedResult.fluencyScore) || 80));
+    const computedOverall = Math.round((grammarScore + vocabularyScore + fluencyScore) / 3);
+
     parsedResult = {
-      overallScore: parsedResult.overallScore ?? 85,
-      vocabularyScore: parsedResult.vocabularyScore ?? 80,
-      grammarScore: parsedResult.grammarScore ?? 85,
-      fluencyScore: parsedResult.fluencyScore ?? 85,
-      feedback: Array.isArray(parsedResult.feedback) ? parsedResult.feedback : [
-        "Good performance during your roleplay practice session!"
-      ],
+      overallScore: Number(parsedResult.overallScore) > 0 ? Number(parsedResult.overallScore) : computedOverall,
+      vocabularyScore,
+      grammarScore,
+      fluencyScore,
+      feedback: Array.isArray(parsedResult.feedback) && parsedResult.feedback.length > 0 
+        ? parsedResult.feedback 
+        : ["Good performance during your roleplay practice session!"],
       corrections: Array.isArray(parsedResult.corrections) ? parsedResult.corrections : []
     };
 
