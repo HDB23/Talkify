@@ -1,6 +1,6 @@
 "use server";
 
-import { generateWithFallback } from "@/lib/ai-provider";
+import { generateWithFallback, GeminiContent } from "@/lib/ai-provider";
 
 const API_MODEL = "gemini-flash-latest";
 
@@ -49,8 +49,8 @@ export const chatWithAgentAction = async (messages: ChatMessage[], agentId: stri
   }
 
   // Convert messages to Gemini's format: user/model
-  let contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
+  let contents: GeminiContent[] = messages.map((m) => ({
+    role: (m.role === "assistant" ? "model" : "user") as "user" | "model",
     parts: [{ text: m.content }],
   }));
 
