@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Reduce memory usage during compilation by tree-shaking heavy packages
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "framer-motion",
+      "@botpress/webchat",
+      "react-admin",
+      "ra-data-simple-rest",
+    ],
+  },
   async headers() {
     return [
       {
@@ -29,3 +39,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

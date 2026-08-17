@@ -5,6 +5,7 @@ import { SidebarItem } from "./sidebar-items";
 import { ClerkLoaded, ClerkLoading, UserButton, UserProfile } from "@clerk/nextjs";
 import { Loader } from "lucide-react";
 import { redirect } from "next/dist/server/api-utils";
+import { ResetProgressButton } from "./reset-progress-button";
 // import { useRouter } from "next/navigation";
 
 type Props = {
@@ -16,7 +17,7 @@ export const SideBar = ({ className }: Props) => {
   return (
     <div
       className={cn(
-        "flex h-full lg:w-[256px] lg:fixed left-0 top-0 px-4 border-r border-slate-200/50 bg-white/90 backdrop-blur-md flex-col z-[40] shadow-[1px_0_10px_rgba(224,236,255,0.2)]",
+        "flex h-full lg:w-[256px] lg:fixed left-0 top-0 px-4 border-r border-slate-200/50 bg-white/90 backdrop-blur-md flex-col z-[40] shadow-[1px_0_10px_rgba(224,236,255,0.2)] overflow-y-auto",
         className,
       )}
     >
@@ -35,6 +36,10 @@ export const SideBar = ({ className }: Props) => {
       <SidebarItem label="rewards" href="/rewards" iconSrc="/certificate.svg"/>
       <SidebarItem label="shop" href="/shop" iconSrc="/shop.svg"/>
       <SidebarItem label="Chatbot" href="/chatbot" iconSrc="/chatbot.png"/>
+      <SidebarItem label="AI Agents" href="/agents" iconSrc="/robot.svg"/>
+    </div>
+    <div className="px-2 pb-3 lg:hidden">
+      <ResetProgressButton />
     </div>
     <div className="p-4 border-t border-slate-100 flex items-center gap-3">
       <ClerkLoading>

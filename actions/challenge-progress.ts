@@ -45,6 +45,36 @@ export const upsertChallengeProgress = async (challengeId: number) => {
         return {error: "hearts"};
     }
 
+    // Calculate streak updates
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const localDateStr = `${yyyy}-${mm}-${dd}`;
+
+    const currentStreak = currentUserProgress.streak ?? 0;
+    const lastActiveDate = currentUserProgress.lastActiveDate;
+    let newStreak = currentStreak;
+
+    if (!lastActiveDate) {
+        newStreak = 1;
+    } else {
+        const last = new Date(lastActiveDate);
+        const curr = new Date(localDateStr);
+        
+        const lastUtc = Date.UTC(last.getFullYear(), last.getMonth(), last.getDate());
+        const currUtc = Date.UTC(curr.getFullYear(), curr.getMonth(), curr.getDate());
+        
+        const diffTime = currUtc - lastUtc;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+            newStreak = currentStreak + 1;
+        } else if (diffDays > 1) {
+            newStreak = 1;
+        }
+    }
+
     if(isPractice) {
         await db.update(challengeProgress).set({
             completed: true,
@@ -55,6 +85,8 @@ export const upsertChallengeProgress = async (challengeId: number) => {
 
         await db.update(userProgress).set({
             hearts: Math.min(currentUserProgress.hearts + 1, 5),
+            streak: newStreak,
+            lastActiveDate: localDateStr,
         }).where(eq(userProgress.userId, userId));
 
         revalidatePath("/learn");
@@ -73,6 +105,8 @@ export const upsertChallengeProgress = async (challengeId: number) => {
 
     await db.update(userProgress).set({
         points: currentUserProgress.points + 10,
+        streak: newStreak,
+        lastActiveDate: localDateStr,
     }).where(eq(userProgress.userId, userId));
 
     revalidatePath("/learn");

@@ -135,3 +135,88 @@ export const refillHearts = async () => {
     revalidatePath("/quests");
     revalidatePath("/leaderboard");
 };
+
+export const resetProgress = async () => {
+    const { userId } = await auth();
+
+    if (!userId) {
+        throw new Error("Unauthorized");
+    }
+
+    const currentUserProgress = await getUserProgress();
+
+    if (!currentUserProgress) {
+        throw new Error("User progress not found");
+    }
+
+    // Reset all stats on userProgress
+    await db.update(userProgress).set({
+        points: 0,
+        hearts: 5,
+        streak: 0,
+        lastActiveDate: null,
+    }).where(eq(userProgress.userId, userId));
+
+    // Delete all challenge progress rows so lessons restart from scratch
+    await db.delete(challengeProgress).where(
+        eq(challengeProgress.userId, userId)
+    );
+
+    revalidatePath("/learn");
+    revalidatePath("/leaderboard");
+    revalidatePath("/quests");
+    revalidatePath("/shop");
+    revalidatePath("/courses");
+};
+
+export const updateStreakAction = async (localDateStr: string) => {
+    const { userId } = await auth();
+
+    if(!userId) {
+        throw new Error("Unauthorized");
+    }
+
+    const currentUserProgress = await getUserProgress();
+
+    if(!currentUserProgress) {
+        throw new Error("User progress not found");
+    }
+
+    const currentStreak = currentUserProgress.streak ?? 0;
+    const lastActiveDate = currentUserProgress.lastActiveDate;
+
+    let newStreak = currentStreak;
+
+    if (!lastActiveDate) {
+        newStreak = 1;
+    } else {
+        const last = new Date(lastActiveDate);
+        const curr = new Date(localDateStr);
+        
+        const lastUtc = Date.UTC(last.getFullYear(), last.getMonth(), last.getDate());
+        const currUtc = Date.UTC(curr.getFullYear(), curr.getMonth(), curr.getDate());
+        
+        const diffTime = currUtc - lastUtc;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+            newStreak = currentStreak + 1;
+        } else if (diffDays > 1) {
+            newStreak = 1;
+        } else if (diffDays === 0) {
+            return { streak: currentStreak, lastActiveDate };
+        }
+    }
+
+    await db.update(userProgress).set({
+        streak: newStreak,
+        lastActiveDate: localDateStr,
+    }).where(eq(userProgress.userId, userId));
+
+    revalidatePath("/learn");
+    revalidatePath("/shop");
+    revalidatePath("/quests");
+    revalidatePath("/leaderboard");
+
+    return { streak: newStreak, lastActiveDate: localDateStr };
+};

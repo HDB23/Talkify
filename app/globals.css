@@ -131,3 +131,15 @@ html,body,:root{
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide Chatbase chatbot widget on non-chatbot pages */
+body.hide-chatbot #chatbase-bubble-window,
+body.hide-chatbot #chatbase-bubble-button,
+body.hide-chatbot iframe[src*="chatbase"],
+body.hide-chatbot [id*="chatbase"],
+body.hide-chatbot [class*="chatbase"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}

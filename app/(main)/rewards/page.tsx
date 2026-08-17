@@ -34,6 +34,7 @@ const RewardsPage = async () => {
                         activeCourse={userProgress.activeCourse}
                         hearts={userProgress.hearts}
                         points={userProgress.points}
+                        streak={userProgress.streak}
                         hasActiveSubscription={isPro}
                     />
                     {!isPro && (

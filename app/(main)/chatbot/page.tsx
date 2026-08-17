@@ -79,6 +79,7 @@ export default async function ChatbotLoader() {
             activeCourse={userProgress.activeCourse}
             hearts={userProgress.hearts}
             points={userProgress.points}
+            streak={userProgress.streak}
             hasActiveSubscription={isPro}
           />
 
@@ -163,6 +164,17 @@ export default async function ChatbotLoader() {
                   </PremiumCard>
                 );
               })}
+            </div>
+
+            {/* CHATBOT IFRAME EMBED */}
+            <div className="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm h-[600px] min-h-[600px] mb-8 relative z-10">
+              <iframe
+                src="https://www.chatbase.co/chatbot-iframe/yC5JLF-9LlYSKVpbAM4lA"
+                title="Talkify Chatbot"
+                width="100%"
+                height="100%"
+                style={{ border: "none" }}
+              />
             </div>
 
             {/* HELP SECTION */}

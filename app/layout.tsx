@@ -7,6 +7,7 @@ import "./globals.css";
 import { ExitModal } from "@/components/modals/exit-modal";
 import { HeartsModal } from "@/components/modals/hearts-modal";
 import { PracticeModal } from "@/components/modals/practice-modal";
+import { ResetProgressModal } from "@/components/modals/reset-progress-modal";
 import Script from "next/script";
 import ChatbotPage from "./(main)/chatbot/page";
 import ChatbotVisibility from "@/components/ChatbotVisibility";
@@ -45,6 +46,9 @@ export default function RootLayout({
           <ExitModal />
           <HeartsModal />
           <PracticeModal />
+          <ResetProgressModal />
+          <ChatbotVisibility />
+          <QuizRefreshFix />
           {children}
         </body>
       </html>

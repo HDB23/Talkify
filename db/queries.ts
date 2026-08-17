@@ -1,6 +1,6 @@
 import { cache } from "react";
 import db from "@/db/drizzle";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import {
   challengeProgress,
@@ -25,6 +25,25 @@ export const getUserProgress = cache(async () => {
       activeCourse: true,
     },
   });
+
+  // Sync profile picture and name from Clerk on every call
+  if (data) {
+    const clerkUser = await currentUser();
+    if (clerkUser) {
+      const latestName = clerkUser.firstName || "User";
+      const latestImage = clerkUser.imageUrl || "/mascot.svg";
+
+      if (data.userName !== latestName || data.userImageSrc !== latestImage) {
+        await db.update(userProgress).set({
+          userName: latestName,
+          userImageSrc: latestImage,
+        }).where(eq(userProgress.userId, userId));
+
+        // Return updated data so callers see the latest values immediately
+        return { ...data, userName: latestName, userImageSrc: latestImage };
+      }
+    }
+  }
 
   return data;
 });

@@ -101,6 +101,8 @@ export const userProgress = pgTable("user_progress", {
     activeCourseId: integer("active_course_id").references(() => courses.id, { onDelete: "cascade" }),
     hearts: integer("hearts").notNull().default(5),
     points: integer("points").notNull().default(0),
+    streak: integer("streak").notNull().default(0),
+    lastActiveDate: text("last_active_date"),
 });
 
 export const userProgressRelations = relations(userProgress, ({ one }) => ({
