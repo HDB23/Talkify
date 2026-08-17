@@ -50,7 +50,7 @@ export const chatWithAgentAction = async (messages: ChatMessage[], agentId: stri
 
   // Convert messages to Gemini's format: user/model
   let contents: GeminiContent[] = messages.map((m) => ({
-    role: (m.role === "assistant" ? "model" : "user") as "user" | "model",
+    role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content }],
   }));
 
@@ -58,10 +58,8 @@ export const chatWithAgentAction = async (messages: ChatMessage[], agentId: stri
   // Since our messages array starts with the assistant's welcome message,
   // we can prepend a user greeting so the entire history (including the welcome message) is preserved.
   if (contents.length > 0 && contents[0].role === "model") {
-    contents = [
-      { role: "user", parts: [{ text: "Hello!" }] },
-      ...contents
-    ];
+    const userGreeting: GeminiContent = { role: "user", parts: [{ text: "Hello!" }] };
+    contents = [userGreeting, ...contents];
   } else {
     const firstUserIdx = contents.findIndex((c) => c.role === "user");
     if (firstUserIdx !== -1) {
